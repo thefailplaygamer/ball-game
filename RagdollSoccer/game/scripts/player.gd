@@ -401,6 +401,9 @@ func _start_penalty() -> void:
 	state = State.STANDING
 	freeze = true
 	penalty_timer = penalty_duration
+	var gm := get_tree().get_first_node_in_group("game_manager")
+	if gm:
+		gm.announce_penalty(Network.players.get(owner_peer_id, "Spieler"), int(penalty_duration))
 
 func _end_penalty() -> void:
 	in_penalty = false

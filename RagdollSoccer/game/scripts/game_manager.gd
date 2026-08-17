@@ -12,6 +12,7 @@ const GOAL_REPLAY_DURATION := 4.0
 const TIMER_RESYNC_INTERVAL := 5.0
 const HALFTIME_BANNER_DURATION := 4.0
 const TACKLE_LOCK_DURATION := 3.0
+const PENALTY_NOTICE_DURATION := 5.0
 
 @onready var players_container: Node3D = $Players
 @onready var ball: RigidBody3D = $Ball
@@ -20,6 +21,7 @@ const TACKLE_LOCK_DURATION := 3.0
 @onready var phase_label: Label = $UI/HUD/PhaseLabel
 @onready var state_banner: Label = $UI/HUD/StateBanner
 @onready var phase_banner: Label = $UI/HUD/PhaseBanner
+@onready var penalty_notice_label: Label = $UI/HUD/PenaltyNoticeLabel
 
 var score := {0: 0, 1: 0}
 var player_goals: Dictionary = {} # peer_id -> Anzahl Tore
@@ -54,6 +56,7 @@ var last_scorer_name := ""
 var goal_sequence_active := false
 var _timer_broadcast_accum := 0.0
 var _next_dummy_id := -1
+var _penalty_notice_token := 0
 
 func _ready() -> void:
 	add_to_group("game_manager")
@@ -253,6 +256,28 @@ func _show_phase_banner(banner_text: String, auto_hide: bool) -> void:
 	await get_tree().create_timer(HALFTIME_BANNER_DURATION).timeout
 	if is_instance_valid(phase_banner) and phase_banner.text == banner_text:
 		phase_banner.text = ""
+
+## Wird vom Host aufgerufen (Player._start_penalty()), sobald ein Spieler eine
+## Zeitstrafe kassiert — informiert ALLE Peers per gut sichtbarem Hinweis am
+## Bildschirmrand, nicht nur den betroffenen Spieler selbst (der hat eh schon
+## seinen eigenen Countdown im PenaltyLabel).
+func announce_penalty(player_name: String, duration_seconds: int) -> void:
+	if not Network.is_host():
+		return
+	show_penalty_notice.rpc(player_name, duration_seconds)
+
+@rpc("call_local", "reliable")
+func show_penalty_notice(player_name: String, duration_seconds: int) -> void:
+	penalty_notice_label.text = "%s hat eine %d Sekunden Zeitstrafe erhalten." % [player_name, duration_seconds]
+	penalty_notice_label.visible = true
+	# Token statt reinem Text-Vergleich, damit zwei Zeitstrafen kurz
+	# hintereinander (auch mit demselben Namen) sich nicht gegenseitig zu früh
+	# ausblenden.
+	_penalty_notice_token += 1
+	var my_token := _penalty_notice_token
+	await get_tree().create_timer(PENALTY_NOTICE_DURATION).timeout
+	if is_instance_valid(penalty_notice_label) and my_token == _penalty_notice_token:
+		penalty_notice_label.visible = false
 
 func _update_state_banner() -> void:
 	match match_state:
