@@ -169,18 +169,33 @@ func _physics_process(delta: float) -> void:
 func _apply_body_color() -> void:
 	if body_parts.is_empty():
 		return # onready-Array noch nicht befüllt, _ready() ruft das gleich selbst noch mal auf
-	var jersey_mat := ShaderMaterial.new()
-	jersey_mat.shader = JERSEY_SHADER
 	var def: Dictionary = JerseyData.get_by_id(equipped_jersey_id)
-	if def["id"] == 0:
-		jersey_mat.set_shader_parameter("pattern_mode", JerseyData.Pattern.SOLID)
-		jersey_mat.set_shader_parameter("color_a", body_color)
-	else:
-		jersey_mat.set_shader_parameter("pattern_mode", def["pattern"])
-		jersey_mat.set_shader_parameter("color_a", def.get("color_a", body_color))
-		jersey_mat.set_shader_parameter("color_b", def.get("color_b", body_color))
-		jersey_mat.set_shader_parameter("color_c", def.get("color_c", body_color))
-	for part in [torso, arm_l, arm_r, leg_l, leg_r]:
+	var mode: int = JerseyData.Pattern.SOLID if def["id"] == 0 else int(def["pattern"])
+	var col_a: Color = body_color if def["id"] == 0 else def.get("color_a", body_color)
+	var col_b: Color = def.get("color_b", col_a)
+	var col_c: Color = def.get("color_c", col_b)
+
+	# Muster mit einem einzelnen Blickfang (Sonne, Galaxienkern) bekommen an
+	# Armen und Beinen nur einen schmalen Randstreifen des Musters zu sehen —
+	# sonst säße das Motiv fünfmal am Körper. Alle anderen Muster kacheln
+	# ohnehin und laufen unverändert über alle Teile.
+	var focal: bool = mode in JerseyData.FOCAL_PATTERNS
+	var regions := {
+		torso: [Vector2.ZERO, Vector2.ONE],
+		arm_l: [Vector2(0.02, 0.0), Vector2(0.2, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
+		arm_r: [Vector2(0.78, 0.0), Vector2(0.2, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
+		leg_l: [Vector2(0.09, 0.0), Vector2(0.18, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
+		leg_r: [Vector2(0.73, 0.0), Vector2(0.18, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
+	}
+	for part in regions:
+		var jersey_mat := ShaderMaterial.new()
+		jersey_mat.shader = JERSEY_SHADER
+		jersey_mat.set_shader_parameter("pattern_mode", mode)
+		jersey_mat.set_shader_parameter("color_a", col_a)
+		jersey_mat.set_shader_parameter("color_b", col_b)
+		jersey_mat.set_shader_parameter("color_c", col_c)
+		jersey_mat.set_shader_parameter("uv_offset", regions[part][0])
+		jersey_mat.set_shader_parameter("uv_scale", regions[part][1])
 		part.material_override = jersey_mat
 	# Kopf behält die Team-Farbe (wichtig für spätere Trikot-Skins, sonst
 	# erkennt man das Team nicht mehr am Kopf) - bekommt aber trotzdem eine
