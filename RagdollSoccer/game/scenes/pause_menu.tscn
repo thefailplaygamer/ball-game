@@ -1,0 +1,70 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/pause_menu.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/options.tscn" id="2"]
+
+[node name="PauseMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.55)
+
+[node name="MainPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -135.0
+offset_right = 140.0
+offset_bottom = 135.0
+
+[node name="VBox" type="VBoxContainer" parent="MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Title" type="Label" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Pause"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Fortsetzen"
+
+[node name="OptionsButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Optionen"
+
+[node name="DisconnectButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Server verlassen"
+
+[node name="QuitButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Spiel verlassen"
+
+[node name="OptionsInstance" parent="." instance=ExtResource("2")]
+layout_mode = 1
+
+[connection signal="pressed" from="MainPanel/VBox/ResumeButton" to="." method="_on_resume_button_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/OptionsButton" to="." method="_on_options_button_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/DisconnectButton" to="." method="_on_disconnect_button_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/QuitButton" to="." method="_on_quit_button_pressed"]

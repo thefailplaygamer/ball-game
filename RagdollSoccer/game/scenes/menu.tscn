@@ -1,0 +1,175 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/menu.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/menu_background.tscn" id="2"]
+[ext_resource type="Texture2D" path="res://assets/images/cover.svg" id="3"]
+
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="BackgroundViewport" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="BackgroundViewport"]
+handle_input_locally = false
+size = Vector2i(1280, 720)
+render_target_update_mode = 4
+
+[node name="MenuBackground" parent="BackgroundViewport/SubViewport" instance=ExtResource("2")]
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.02, 0.03, 0.045, 0.4)
+
+[node name="MainPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -190.0
+offset_top = -250.0
+offset_right = 190.0
+offset_bottom = 250.0
+
+[node name="VBox" type="VBoxContainer" parent="MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 14.0
+offset_right = -18.0
+offset_bottom = -14.0
+theme_override_constants/separation = 8
+
+[node name="Logo" type="TextureRect" parent="MainPanel/VBox"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WelcomeLabel" type="Label" parent="MainPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+
+[node name="NumberRow" type="HBoxContainer" parent="MainPanel/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="NumberEdit" type="LineEdit" parent="MainPanel/VBox/NumberRow"]
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+max_length = 2
+placeholder_text = "Nr."
+tooltip_text = "Trikotnummer"
+
+[node name="HostButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Spiel hosten"
+
+[node name="IPEdit" type="LineEdit" parent="MainPanel/VBox"]
+layout_mode = 2
+placeholder_text = "IP-Adresse (zum Beitreten)"
+
+[node name="JoinButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Beitreten"
+
+[node name="OptionsButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Optionen"
+
+[node name="InventoryButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Inventar"
+
+[node name="LogoutButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Abmelden"
+
+[node name="QuitButton" type="Button" parent="MainPanel/VBox"]
+layout_mode = 2
+text = "Spiel verlassen"
+
+[node name="StatusLabel" type="Label" parent="MainPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="PatchNotesPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -360.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -40.0
+
+[node name="VBox" type="VBoxContainer" parent="PatchNotesPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 14.0
+offset_right = -16.0
+offset_bottom = -14.0
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="PatchNotesPanel/VBox"]
+layout_mode = 2
+text = "Was ist neu"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.95, 0.6, 0.25, 1)
+
+[node name="Body" type="RichTextLabel" parent="PatchNotesPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_active = true
+theme_override_font_sizes/normal_font_size = 13
+text = "Lade Patchnotes …"
+
+[node name="VersionLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_top = -26.0
+offset_right = -10.0
+offset_bottom = -6.0
+theme_override_colors/font_color = Color(0.6, 0.67, 0.75, 0.7)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 2
+
+[connection signal="pressed" from="MainPanel/VBox/HostButton" to="." method="_on_host_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/JoinButton" to="." method="_on_join_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/OptionsButton" to="." method="_on_options_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/InventoryButton" to="." method="_on_inventory_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/LogoutButton" to="." method="_on_logout_pressed"]
+[connection signal="pressed" from="MainPanel/VBox/QuitButton" to="." method="_on_quit_pressed"]

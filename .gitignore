@@ -1,0 +1,11 @@
+# Godot editor cache (regenerated automatically)
+.godot/
+
+# Godot engine binaries (too large for git, not project source)
+RagdollSoccer/godot-engine/
+
+# Build output (distributed via GitHub Releases instead)
+RagdollSoccer/builds/
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json

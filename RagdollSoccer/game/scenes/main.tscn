@@ -1,0 +1,525 @@
+[gd_scene load_steps=36 format=3]
+
+[ext_resource type="Script" path="res://scripts/game_manager.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/goal_area.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ball.tscn" id="3"]
+[ext_resource type="Shader" path="res://shaders/stadium_glass.gdshader" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/chat_box.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/pause_menu.tscn" id="7"]
+[ext_resource type="Texture2D" path="res://assets/textures/grass.jpg" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/position_select.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/scoreboard.tscn" id="11"]
+[ext_resource type="Shader" path="res://shaders/stadium_goal.gdshader" id="13"]
+[ext_resource type="Texture2D" path="res://assets/textures/fence/goal_net_alpha.png" id="14"]
+[ext_resource type="FontFile" path="res://assets/fonts/BebasNeue-Regular.ttf" id="15"]
+[ext_resource type="PackedScene" path="res://scenes/city_skyline.tscn" id="16"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_score_chip"]
+bg_color = Color(0.04, 0.05, 0.07, 0.82)
+corner_radius_top_left = 3
+corner_radius_top_right = 14
+corner_radius_bottom_left = 14
+corner_radius_bottom_right = 3
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1.0, 0.45, 0.05, 0.8)
+shadow_size = 6
+shadow_color = Color(1.0, 0.45, 0.05, 0.2)
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial_1"]
+sky_top_color = Color(0.16, 0.28, 0.58, 1)
+sky_horizon_color = Color(0.95, 0.66, 0.46, 1)
+sky_curve = 0.18
+ground_bottom_color = Color(0.1, 0.09, 0.11, 1)
+ground_horizon_color = Color(0.95, 0.66, 0.46, 1)
+ground_curve = 0.18
+sun_angle_max = 30.0
+sun_curve = 0.28
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("SkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 3
+ambient_light_energy = 0.85
+fog_enabled = true
+fog_light_color = Color(0.85, 0.72, 0.65, 1)
+fog_light_energy = 1.0
+fog_sun_scatter = 0.35
+fog_density = 0.01
+fog_sky_affect = 0.25
+glow_enabled = true
+glow_intensity = 0.5
+glow_strength = 1.0
+glow_bloom = 0.1
+glow_hdr_threshold = 0.9
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(32, 1, 20)
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(32, 1, 20)
+
+[sub_resource type="StandardMaterial3D" id="Mat_grass"]
+albedo_color = Color(0.55, 0.95, 0.45, 1)
+albedo_texture = ExtResource("8")
+uv1_scale = Vector3(13, 9, 1)
+roughness = 0.95
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_sidewall"]
+size = Vector3(28, 6.0, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_sidewall"]
+size = Vector3(28, 6.0, 0.3)
+
+[sub_resource type="ShaderMaterial" id="Mat_wall"]
+shader = ExtResource("4")
+shader_parameter/tint = Color(0.8, 0.85, 0.9, 1)
+shader_parameter/base_alpha = 0.4
+shader_parameter/line_alpha = 0.7
+shader_parameter/grid_scale = 6.0
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_endflank"]
+size = Vector3(0.3, 6.0, 7.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_endflank"]
+size = Vector3(0.3, 6.0, 7.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_goalside"]
+size = Vector3(2.5, 3.0, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_goalside"]
+size = Vector3(2.5, 3.0, 0.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_goalceiling"]
+size = Vector3(2.5, 3.15, 4.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_goalceiling"]
+size = Vector3(2.5, 3.15, 4.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_backwall"]
+size = Vector3(0.3, 3.0, 4.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_backwall"]
+size = Vector3(0.3, 3.0, 4.4)
+
+[sub_resource type="ShaderMaterial" id="Mat_goal_a"]
+shader = ExtResource("13")
+shader_parameter/net_mask = ExtResource("14")
+shader_parameter/team_tint = Color(0.85, 0.2, 0.2, 1)
+shader_parameter/net_rope_color = Color(0.92, 0.93, 0.95, 1)
+shader_parameter/frame_color = Color(0.82, 0.84, 0.88, 1)
+shader_parameter/net_scale = 6.0
+shader_parameter/net_opacity = 0.9
+shader_parameter/base_alpha = 0.6
+shader_parameter/frame_width = 0.07
+shader_parameter/team_tint_strength = 0.45
+
+[sub_resource type="ShaderMaterial" id="Mat_goal_b"]
+shader = ExtResource("13")
+shader_parameter/net_mask = ExtResource("14")
+shader_parameter/team_tint = Color(0.2, 0.4, 0.9, 1)
+shader_parameter/net_rope_color = Color(0.92, 0.93, 0.95, 1)
+shader_parameter/frame_color = Color(0.82, 0.84, 0.88, 1)
+shader_parameter/net_scale = 6.0
+shader_parameter/net_opacity = 0.9
+shader_parameter/base_alpha = 0.6
+shader_parameter/frame_width = 0.07
+shader_parameter/team_tint_strength = 0.45
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_goalsensor"]
+size = Vector3(2.5, 3.0, 4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ceiling"]
+size = Vector3(33, 0.3, 20)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ceiling"]
+size = Vector3(33, 0.3, 20)
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 10, 0)
+light_color = Color(1, 0.93, 0.82, 1)
+light_energy = 1.15
+shadow_enabled = true
+
+[node name="ReplayCamera" type="Camera3D" parent="." groups=["replay_camera"]]
+transform = Transform3D(1, 0, 0, 0, 0.834, 0.552, 0, -0.552, 0.834, 0, 12, 14)
+current = true
+fov = 60.0
+
+[node name="CitySkyline" parent="." instance=ExtResource("16")]
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Mat_grass")
+
+[node name="Ceiling" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.15, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ceiling"]
+shape = SubResource("BoxShape3D_ceiling")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ceiling"]
+mesh = SubResource("BoxMesh_ceiling")
+visible = false
+
+[node name="WallNorth" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 9.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallNorth"]
+shape = SubResource("BoxShape3D_sidewall")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallNorth"]
+mesh = SubResource("BoxMesh_sidewall")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="WallSouth" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, -9.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallSouth"]
+shape = SubResource("BoxShape3D_sidewall")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallSouth"]
+mesh = SubResource("BoxMesh_sidewall")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="FlankEastTop" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 3.0, 5.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlankEastTop"]
+shape = SubResource("BoxShape3D_endflank")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FlankEastTop"]
+mesh = SubResource("BoxMesh_endflank")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="FlankEastBottom" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 3.0, -5.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlankEastBottom"]
+shape = SubResource("BoxShape3D_endflank")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FlankEastBottom"]
+mesh = SubResource("BoxMesh_endflank")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="FlankWestTop" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 3.0, 5.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlankWestTop"]
+shape = SubResource("BoxShape3D_endflank")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FlankWestTop"]
+mesh = SubResource("BoxMesh_endflank")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="FlankWestBottom" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 3.0, -5.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlankWestBottom"]
+shape = SubResource("BoxShape3D_endflank")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FlankWestBottom"]
+mesh = SubResource("BoxMesh_endflank")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="GoalSideEastTop" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.25, 1.5, 2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalSideEastTop"]
+shape = SubResource("BoxShape3D_goalside")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="GoalSideEastTop"]
+mesh = SubResource("BoxMesh_goalside")
+surface_material_override/0 = SubResource("Mat_goal_b")
+
+[node name="GoalSideEastBottom" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.25, 1.5, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalSideEastBottom"]
+shape = SubResource("BoxShape3D_goalside")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="GoalSideEastBottom"]
+mesh = SubResource("BoxMesh_goalside")
+surface_material_override/0 = SubResource("Mat_goal_b")
+
+[node name="GoalSideWestTop" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 1.5, 2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalSideWestTop"]
+shape = SubResource("BoxShape3D_goalside")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="GoalSideWestTop"]
+mesh = SubResource("BoxMesh_goalside")
+surface_material_override/0 = SubResource("Mat_goal_a")
+
+[node name="GoalSideWestBottom" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 1.5, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalSideWestBottom"]
+shape = SubResource("BoxShape3D_goalside")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="GoalSideWestBottom"]
+mesh = SubResource("BoxMesh_goalside")
+surface_material_override/0 = SubResource("Mat_goal_a")
+
+[node name="BackWallEast" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BackWallEast"]
+shape = SubResource("BoxShape3D_backwall")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BackWallEast"]
+mesh = SubResource("BoxMesh_backwall")
+surface_material_override/0 = SubResource("Mat_goal_b")
+
+[node name="BackWallWest" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.5, 1.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BackWallWest"]
+shape = SubResource("BoxShape3D_backwall")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BackWallWest"]
+mesh = SubResource("BoxMesh_backwall")
+surface_material_override/0 = SubResource("Mat_goal_a")
+
+[node name="GoalCeilingEast" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.25, 4.575, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalCeilingEast"]
+shape = SubResource("BoxShape3D_goalceiling")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="GoalCeilingEast"]
+mesh = SubResource("BoxMesh_goalceiling")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="GoalCeilingWest" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 4.575, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalCeilingWest"]
+shape = SubResource("BoxShape3D_goalceiling")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="GoalCeilingWest"]
+mesh = SubResource("BoxMesh_goalceiling")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="GoalAreaEast" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.25, 1.5, 0)
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("2")
+team = 1
+goal_line_x = 14.0
+into_goal_sign = 1.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalAreaEast"]
+shape = SubResource("BoxShape3D_goalsensor")
+
+[node name="GoalAreaWest" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 1.5, 0)
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("2")
+team = 0
+goal_line_x = -14.0
+into_goal_sign = -1.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalAreaWest"]
+shape = SubResource("BoxShape3D_goalsensor")
+
+[node name="Ball" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+
+[node name="Players" type="Node3D" parent="."]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath("../Players")
+_spawnable_scenes = PackedStringArray("res://scenes/player.tscn")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="ScoreChip" type="Panel" parent="UI/HUD"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -120.0
+offset_top = 8.0
+offset_right = 120.0
+offset_bottom = 58.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_score_chip")
+
+[node name="ScoreLabel" type="RichTextLabel" parent="UI/HUD"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -120.0
+offset_top = 8.0
+offset_right = 120.0
+offset_bottom = 58.0
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 38
+theme_override_fonts/normal_font = ExtResource("15")
+bbcode_enabled = true
+text = "[center][color=#f2453f]0[/color]  :  [color=#3f8bff]0[/color][/center]"
+fit_content = true
+scroll_active = false
+
+[node name="TimerPanel" type="VBoxContainer" parent="UI/HUD"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -150.0
+offset_top = 8.0
+offset_right = -20.0
+offset_bottom = 62.0
+theme_override_constants/separation = 0
+
+[node name="TimerChip" type="Panel" parent="UI/HUD/TimerPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 54)
+theme_override_styles/panel = SubResource("StyleBoxFlat_score_chip")
+
+[node name="TimerCaption" type="Label" parent="UI/HUD/TimerPanel/TimerChip"]
+layout_mode = 1
+anchor_right = 1.0
+offset_top = 5.0
+offset_bottom = 21.0
+theme_override_colors/font_color = Color(1.0, 0.58, 0.15, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+text = "ZEIT"
+
+[node name="TimerLabel" type="Label" parent="UI/HUD/TimerPanel/TimerChip"]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 16.0
+offset_bottom = -4.0
+theme_override_fonts/font = ExtResource("15")
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+text = ""
+
+[node name="PhaseLabel" type="Label" parent="UI/HUD"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -320.0
+offset_top = 64.0
+offset_right = 320.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(0.6, 0.67, 0.75, 0.9)
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="StateBanner" type="Label" parent="UI/HUD"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -300.0
+offset_top = 112.0
+offset_right = 300.0
+offset_bottom = 168.0
+theme_override_fonts/font = ExtResource("15")
+theme_override_font_sizes/font_size = 44
+theme_override_colors/font_color = Color(1.0, 0.55, 0.1, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.02, 1)
+theme_override_constants/outline_size = 8
+horizontal_alignment = 1
+
+[node name="PhaseBanner" type="Label" parent="UI/HUD"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -90.0
+offset_right = 400.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_fonts/font = ExtResource("15")
+theme_override_font_sizes/font_size = 64
+theme_override_colors/font_color = Color(1.0, 0.85, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.02, 1)
+theme_override_constants/outline_size = 10
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+text = ""
+
+[node name="StaminaBar" type="ProgressBar" parent="UI/HUD" groups=["stamina_bar"]]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_top = -46.0
+offset_right = 110.0
+offset_bottom = -26.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="PenaltyLabel" type="Label" parent="UI/HUD" groups=["penalty_label"]]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -140.0
+offset_top = -78.0
+offset_right = 140.0
+offset_bottom = -50.0
+theme_override_colors/font_color = Color(0.95, 0.25, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = ""
+visible = false
+
+[node name="ChatBox" parent="UI" instance=ExtResource("6")]
+layout_mode = 1
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("7")]
+layout_mode = 1
+
+[node name="PositionSelect" parent="UI" instance=ExtResource("10")]
+layout_mode = 1
+
+[node name="Scoreboard" parent="UI" instance=ExtResource("11")]
+layout_mode = 1

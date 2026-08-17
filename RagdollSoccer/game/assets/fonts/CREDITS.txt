@@ -1,0 +1,7 @@
+BebasNeue-Regular.ttf
+  Dharma Type / Ryoichi Tsunekawa - "Bebas Neue" - SIL Open Font License 1.1
+  https://fonts.google.com/specimen/Bebas+Neue
+
+Rajdhani-Regular.ttf, Rajdhani-Medium.ttf, Rajdhani-SemiBold.ttf, Rajdhani-Bold.ttf
+  Indian Type Foundry - "Rajdhani" - SIL Open Font License 1.1
+  https://fonts.google.com/specimen/Rajdhani

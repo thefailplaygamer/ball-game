@@ -1,0 +1,64 @@
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141a24"/>
+      <stop offset="1" stop-color="#05070a"/>
+    </linearGradient>
+    <linearGradient id="stripeOrange" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff7311" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ff7311" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff9a3f" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="stripeBlue" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2a8bff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#2a8bff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#6fb4ff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="ballShade" cx="0.35" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.6" stop-color="#e6e6e6"/>
+      <stop offset="1" stop-color="#a8a8a8"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.46" r="0.55">
+      <stop offset="0" stop-color="#ff7311" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ff7311" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="0.5" cy="0.45" r="0.8">
+      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.55"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="0" y="0" width="800" height="450" fill="url(#bg)"/>
+
+  <!-- Dynamische Diagonal-Streifen im Hintergrund -->
+  <g transform="rotate(-12 400 225)" opacity="0.9">
+    <rect x="-100" y="150" width="1000" height="34" fill="url(#stripeOrange)"/>
+    <rect x="-100" y="255" width="1000" height="22" fill="url(#stripeBlue)"/>
+  </g>
+
+  <circle cx="400" cy="205" r="160" fill="url(#glow)"/>
+
+  <!-- Fussball -->
+  <g transform="translate(400,205)">
+    <circle r="88" fill="url(#ballShade)" stroke="#1a1a1a" stroke-width="3"/>
+    <g fill="#181818">
+      <polygon points="0,-35 20,-22 13,1 -13,1 -20,-22"/>
+      <polygon points="-54,-7 -65,17 -46,35 -22,24 -28,-2"/>
+      <polygon points="54,-7 65,17 46,35 22,24 28,-2"/>
+      <polygon points="-17,48 17,48 24,70 0,85 -24,70"/>
+    </g>
+    <g stroke="#1a1a1a" stroke-width="2.3" fill="none" opacity="0.85">
+      <path d="M0,-35 L-54,-7 M0,-35 L54,-7 M-54,-7 L-28,-2 M54,-7 L28,-2 M-28,-2 L-13,1 M28,-2 L13,1 M-13,1 L-17,48 M13,1 L17,48 M-17,48 L-24,70 M17,48 L24,70 M-24,70 L0,85 M24,70 L0,85 M-22,24 L-28,-2 M22,24 L28,-2 M-22,24 L-17,48 M22,24 L17,48"/>
+    </g>
+    <ellipse cx="0" cy="0" rx="92" ry="92" fill="none" stroke="#ff7311" stroke-width="2" opacity="0.55"/>
+  </g>
+
+  <!-- Titel -->
+  <g text-anchor="middle" transform="skewX(-6)">
+    <text x="415" y="378" font-family="Arial Black, Arial, sans-serif" font-size="104" font-weight="900" letter-spacing="4" fill="#05070a" opacity="0.65" transform="translate(4,4)">BALL</text>
+    <text x="415" y="378" font-family="Arial Black, Arial, sans-serif" font-size="104" font-weight="900" letter-spacing="4" fill="#f4f7fb" stroke="#ff7311" stroke-width="2.5">BALL</text>
+  </g>
+
+  <rect x="0" y="0" width="800" height="450" fill="url(#vignette)"/>
+</svg>

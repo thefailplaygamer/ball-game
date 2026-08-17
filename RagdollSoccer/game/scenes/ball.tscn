@@ -1,0 +1,63 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/ball.gd" id="1"]
+[ext_resource type="Shader" path="res://shaders/ball_pattern.gdshader" id="2"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_1"]
+radius = 0.22
+height = 0.44
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.22
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1"]
+friction = 0.7
+bounce = 0.5
+
+[sub_resource type="ShaderMaterial" id="Mat_ball"]
+shader = ExtResource("2")
+shader_parameter/cell_scale = 3.2
+shader_parameter/white_color = Color(0.95, 0.95, 0.92, 1)
+shader_parameter/black_color = Color(0.05, 0.05, 0.05, 1)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_1"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath(".:linear_velocity")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath(".:angular_velocity")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+
+[node name="Ball" type="RigidBody3D" groups=["ball"]]
+mass = 0.43
+physics_material_override = SubResource("PhysicsMaterial_1")
+continuous_cd = true
+script = ExtResource("1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_1")
+surface_material_override/0 = SubResource("Mat_ball")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
+
+[node name="KickSound" type="AudioStreamPlayer3D" parent="."]
+bus = "Ball"
+unit_size = 6.0
+max_distance = 50.0
+volume_db = -3.0
+
+[node name="TouchSound" type="AudioStreamPlayer3D" parent="."]
+bus = "Ball"
+unit_size = 6.0
+max_distance = 50.0
+volume_db = -6.0
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_1")

@@ -1,0 +1,179 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/position_select.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="pitch_style"]
+bg_color = Color(0.14, 0.4, 0.16, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.9, 0.9, 0.85, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
+[node name="PositionSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 1
+script = ExtResource("1")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.03, 0.02, 0.01, 0.6)
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -220.0
+offset_right = 320.0
+offset_bottom = 220.0
+
+[node name="Title" type="Label" parent="Panel"]
+layout_mode = 1
+anchor_right = 1.0
+offset_top = 12.0
+offset_bottom = 44.0
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+text = "Wähle deine Position"
+
+[node name="PitchMap" type="Panel" parent="Panel"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 56.0
+offset_right = 300.0
+offset_bottom = 396.0
+theme_override_styles/panel = SubResource("pitch_style")
+
+[node name="CenterLine" type="ColorRect" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 298.0
+offset_top = 4.0
+offset_right = 302.0
+offset_bottom = 336.0
+color = Color(0.9, 0.9, 0.85, 0.8)
+
+[node name="0_goalkeeper" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 145.0
+offset_right = 85.0
+offset_bottom = 195.0
+text = "TW"
+autowrap_mode = 2
+
+[node name="0_defender_0" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 35.0
+offset_right = 200.0
+offset_bottom = 85.0
+text = "LF"
+autowrap_mode = 2
+
+[node name="0_defender_1" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 145.0
+offset_right = 200.0
+offset_bottom = 195.0
+text = "IV"
+autowrap_mode = 2
+
+[node name="0_defender_2" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 255.0
+offset_right = 200.0
+offset_bottom = 305.0
+text = "RF"
+autowrap_mode = 2
+
+[node name="0_striker" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 205.0
+offset_top = 145.0
+offset_right = 285.0
+offset_bottom = 195.0
+text = "S"
+autowrap_mode = 2
+
+[node name="1_striker" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 315.0
+offset_top = 145.0
+offset_right = 395.0
+offset_bottom = 195.0
+text = "S"
+autowrap_mode = 2
+
+[node name="1_defender_0" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 400.0
+offset_top = 35.0
+offset_right = 480.0
+offset_bottom = 85.0
+text = "LF"
+autowrap_mode = 2
+
+[node name="1_defender_1" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 400.0
+offset_top = 145.0
+offset_right = 480.0
+offset_bottom = 195.0
+text = "IV"
+autowrap_mode = 2
+
+[node name="1_defender_2" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 400.0
+offset_top = 255.0
+offset_right = 480.0
+offset_bottom = 305.0
+text = "RF"
+autowrap_mode = 2
+
+[node name="1_goalkeeper" type="Button" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 515.0
+offset_top = 145.0
+offset_right = 595.0
+offset_bottom = 195.0
+text = "TW"
+autowrap_mode = 2
+
+[node name="TeamLabelLeft" type="Label" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 310.0
+offset_right = 285.0
+offset_bottom = 332.0
+horizontal_alignment = 1
+text = "Team Rot"
+theme_override_colors/font_color = Color(1, 0.55, 0.55, 1)
+
+[node name="TeamLabelRight" type="Label" parent="Panel/PitchMap"]
+layout_mode = 0
+offset_left = 315.0
+offset_top = 310.0
+offset_right = 595.0
+offset_bottom = 332.0
+horizontal_alignment = 1
+text = "Team Blau"
+theme_override_colors/font_color = Color(0.6, 0.75, 1, 1)

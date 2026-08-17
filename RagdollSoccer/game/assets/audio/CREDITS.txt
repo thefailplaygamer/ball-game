@@ -1,0 +1,36 @@
+ui_click.ogg, ui_confirm.ogg, ui_error.ogg
+  Kenney (kenney.nl) - Impact Sounds / Interface Sounds - CC0 (gemeinfrei)
+
+crowd_ambience.mp3, goal_cheer.mp3
+  Gregor Quendel - "Free Crowd Cheering Sounds" - CC-BY 4.0
+  https://opengameart.org/content/free-crowd-cheering-sounds
+  Namensnennung erforderlich, siehe In-Game-Hinweis im Optionsmenü.
+
+kick.ogg
+  bittermelonheart - "Soccer Ball Kick" - CC0 (gemeinfrei)
+  https://freesound.org/s/555042/
+
+goal_horn.ogg
+  Joseph SARDIN (BigSoundBank) - "Gas fog horn #1" - CC0 (gemeinfrei)
+  https://bigsoundbank.com/gas-fog-horn-1-s1048.html
+
+ball_touch.ogg
+  volivieri - "soccer ball hit ground 02.wav" - CC-BY 4.0
+  https://freesound.org/people/volivieri/sounds/37155/
+  Namensnennung erforderlich, siehe In-Game-Hinweis im Optionsmenü.
+
+halftime_jingle.ogg
+  hernandack - "A Brand New Wisdom" (aus "Short Loops Background Music Pack") - CC0 (gemeinfrei)
+  https://opengameart.org/content/short-loops-background-music-pack
+
+fulltime_fanfare.wav
+  cynicmusic - "Victory Fanfare Short" (Heavy_ConceptB.wav) - CC0 (gemeinfrei)
+  https://opengameart.org/content/victory-fanfare-short
+
+crate_spin.mp3
+  Mixkit - "Slot machine wheel" - Mixkit-Lizenz (frei nutzbar, keine Namensnennung nötig)
+  https://mixkit.co/free-sound-effects/slot-machine/
+
+crate_win.mp3
+  Mixkit - "Slot machine win" - Mixkit-Lizenz (frei nutzbar, keine Namensnennung nötig)
+  https://mixkit.co/free-sound-effects/slot-machine/
