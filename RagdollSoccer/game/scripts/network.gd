@@ -16,6 +16,14 @@ var my_number: int = 10
 const PING_BROADCAST_INTERVAL := 1.0
 var _ping_broadcast_accum: float = 0.0
 
+func _ready() -> void:
+	# Läuft auf jedem Client, sobald die Verbindung zum Host abreißt — egal ob
+	# der Host sauber getrennt hat oder einfach das Spiel/den Rechner
+	# geschlossen hat (ENet erkennt beides). "multiplayer" ist der über die
+	# ganze App-Laufzeit gleichbleibende MultiplayerAPI-Singleton, daher reicht
+	# das einmalige Verbinden hier im Autoload statt bei jedem join_game().
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
 func _process(delta: float) -> void:
 	if not is_host():
 		return
@@ -82,6 +90,24 @@ func disconnect_game() -> void:
 	equipped_jerseys.clear()
 	pings.clear()
 	input_locked = false
+
+## Der Host hat die Verbindung geschlossen (bewusst getrennt oder Spiel/PC
+## einfach zu). Statt alle in einer toten Verbindung hängen zu lassen: sofort
+## selbst trennen, zurück ins Hauptmenü und per Popup Bescheid geben.
+func _on_server_disconnected() -> void:
+	disconnect_game()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().change_scene_to_file("res://scenes/menu.tscn")
+	_show_server_lost_popup()
+
+func _show_server_lost_popup() -> void:
+	var dialog := AcceptDialog.new()
+	dialog.title = "Verbindung getrennt"
+	dialog.dialog_text = "Der Server ist nicht mehr erreichbar — der Host hat das Spiel verlassen."
+	get_tree().root.add_child(dialog)
+	dialog.popup_centered()
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
 
 @rpc("any_peer", "reliable")
 func register_name(pname: String, number: int, jersey_id: int = 0) -> void:

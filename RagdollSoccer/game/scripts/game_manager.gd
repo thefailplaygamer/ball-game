@@ -132,7 +132,6 @@ func register_reset_vote(peer_id: int) -> void:
 
 func _reset_to_warmup() -> void:
 	goal_sequence_active = false
-	phase = Phase.WARMUP
 	score = {0: 0, 1: 0}
 	player_goals.clear()
 	sync_player_goals.rpc(player_goals)
@@ -140,7 +139,7 @@ func _reset_to_warmup() -> void:
 	reset_votes.clear()
 	ready_status_text = ""
 	update_score_display.rpc(0, 0)
-	sync_phase.rpc(phase, 0)
+	sync_phase.rpc(Phase.WARMUP, 0)
 	set_match_state(MatchState.NONE)
 	ball.freeze = false
 	ball.reset_ball()
@@ -149,27 +148,30 @@ func _reset_to_warmup() -> void:
 		child.cancel_penalty()
 
 func _start_match() -> void:
-	phase = Phase.FIRST_HALF
+	# phase wird NICHT direkt hier gesetzt, sondern erst im sync_phase-RPC-Handler
+	# (auch auf dem Host selbst, dank call_local) — sonst stimmt beim Host die
+	# Änderungs-Erkennung dort nicht mehr und der Phasenwechsel-Banner bleibt aus.
 	time_remaining = HALF_DURATION
-	sync_phase.rpc(phase, int(HALF_DURATION))
-	_reset_round()
+	sync_phase.rpc(Phase.FIRST_HALF, int(HALF_DURATION))
+	_reset_round(true)
 
 func _advance_phase() -> void:
 	match phase:
 		Phase.FIRST_HALF:
 			_go_to_halftime()
 		Phase.HALFTIME:
-			phase = Phase.SECOND_HALF
 			time_remaining = HALF_DURATION
-			_reset_round()
+			sync_phase.rpc(Phase.SECOND_HALF, int(HALF_DURATION))
+			# Anstoß zur 2. Halbzeit: auch Spieler, die noch eine Zeitstrafe
+			# absitzen, werden wieder an ihre zugeteilte Position gestellt.
+			_reset_round(true)
 		Phase.SECOND_HALF:
-			phase = Phase.FULL_TIME
 			time_remaining = 0.0
 			SFX.play_fulltime_fanfare.rpc()
+			sync_phase.rpc(Phase.FULL_TIME, 0)
 			# Nur bei einem *echt* durchgespielten Match (Timer läuft ab) gibt's
 			# eine Kiste, nicht wenn der Host per /end vorzeitig abbricht.
 			_award_crates.rpc()
-	sync_phase.rpc(phase, int(ceil(max(time_remaining, 0.0))))
 
 ## Läuft lokal auf jedem Peer (auch dem Host selbst): jeder bekommt eine
 ## Kiste in sein eigenes, rein lokales Inventar. Unterliegt dort dem
@@ -179,8 +181,8 @@ func _award_crates() -> void:
 	Inventory.add_crate()
 
 func _go_to_halftime() -> void:
-	phase = Phase.HALFTIME
 	time_remaining = HALFTIME_BREAK
+	sync_phase.rpc(Phase.HALFTIME, int(HALFTIME_BREAK))
 	_reset_round()
 	SFX.play_halftime_jingle.rpc()
 
@@ -401,7 +403,6 @@ func force_halftime() -> void:
 	if phase != Phase.FIRST_HALF:
 		return
 	_go_to_halftime()
-	sync_phase.rpc(phase, int(ceil(max(time_remaining, 0.0))))
 
 ## Admin-Befehl: verbleibende Zeit relativ verändern (auch negativ).
 func add_time(seconds: float) -> void:
@@ -508,7 +509,13 @@ func on_goal_scored(team: int) -> void:
 	last_scorer_name = Network.players.get(scorer_id, "")
 	score[team] += 1
 	update_score_display.rpc(score[0], score[1])
-	if scorer_id != -1:
+	# Eigentor: letzte Ballberührung kam vom kassierenden statt vom punktenden
+	# Team. Der Team-Punkt zählt trotzdem ganz normal (s.o.), aber im
+	# persönlichen Scoreboard-Torzähler soll sich der Spieler dadurch nicht
+	# selbst ein Tor gutschreiben.
+	var scorer_slot: String = player_slot.get(scorer_id, "")
+	var scorer_team: int = int(slots[scorer_slot]["team"]) if slots.has(scorer_slot) else -1
+	if scorer_id != -1 and scorer_team == team:
 		player_goals[scorer_id] = player_goals.get(scorer_id, 0) + 1
 		sync_player_goals.rpc(player_goals)
 	SFX.play_goal.rpc()
@@ -538,13 +545,22 @@ func on_goal_scored(team: int) -> void:
 
 @rpc("call_local", "reliable")
 func update_score_display(s0: int, s1: int) -> void:
+	# score-Dictionary auch auf Clients mitpflegen (nicht nur auf dem Host),
+	# sonst zeigt z.B. der "Spielende — Endstand"-Banner dort dauerhaft 0 : 0.
+	score[0] = s0
+	score[1] = s1
 	score_label.text = "[center][color=#f2453f]%d[/color]  :  [color=#3f8bff]%d[/color][/center]" % [s0, s1]
 
 @rpc("call_local", "reliable")
 func sync_player_goals(new_goals: Dictionary) -> void:
 	player_goals = new_goals
 
-func _reset_round() -> void:
+## cancel_penalties: bei einem "echten" Anstoß (Matchstart, Anstoß zur 2.
+## Halbzeit) werden auch Spieler, die gerade eine Zeitstrafe absitzen, wieder
+## an ihre zugeteilte Position gestellt, statt in der Strafbox zu bleiben.
+## Bei einem gewöhnlichen Anstoß nach einem Tor läuft die Zeitstrafe dagegen
+## unabhängig weiter (unverändertes Verhalten).
+func _reset_round(cancel_penalties: bool = false) -> void:
 	ball.freeze = true
 	ball.reset_ball()
 	ball.last_toucher_peer_id = -1
@@ -552,6 +568,8 @@ func _reset_round() -> void:
 	set_match_state(MatchState.KICKOFF)
 	for child in players_container.get_children():
 		child.freeze = true
+		if cancel_penalties:
+			child.cancel_penalty()
 		if child.in_penalty:
 			continue # Zeitstrafe läuft unabhängig vom Anstoß weiter, nicht zurückteleportieren.
 		var pid := int(child.name)
