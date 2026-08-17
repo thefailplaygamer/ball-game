@@ -86,6 +86,13 @@ func _process(delta: float) -> void:
 
 	if kickoff_lock > 0.0:
 		kickoff_lock -= delta
+		# Ball und Spieler werden während der GESAMTEN Anstoß-Sperre jeden Frame
+		# neu auf ihre Zielposition gepinnt (nicht nur einmalig in _reset_round()).
+		# Rein defensiv: sollte ein einzelner Frame die Position aus irgendeinem
+		# Grund (Physik-/Replikations-Timing) nicht übernehmen, korrigiert sich
+		# das dadurch spätestens im nächsten Frame von selbst, statt sichtbar
+		# für den ganzen Anstoß falsch stehen zu bleiben.
+		_hold_kickoff_positions()
 		if kickoff_lock <= 0.0:
 			ball.freeze = false
 			for child in players_container.get_children():
@@ -590,3 +597,22 @@ func _reset_round(cancel_penalties: bool = false) -> void:
 		child.rotation.y = face_yaw
 		child.set_camera_yaw.rpc(face_yaw)
 		child.state = Player.State.STANDING
+
+## Wird jeden Frame während kickoff_lock > 0 aufgerufen (siehe _process()) und
+## pinnt Ball + Spieler (außer bei laufender Zeitstrafe) durchgehend auf ihre
+## Anstoß-Position, statt sie nur einmalig in _reset_round() zu setzen.
+func _hold_kickoff_positions() -> void:
+	ball.global_position = ball.spawn_position
+	ball.linear_velocity = Vector3.ZERO
+	ball.angular_velocity = Vector3.ZERO
+	for child in players_container.get_children():
+		if child.in_penalty:
+			continue
+		var pid := int(child.name)
+		var slot_id: String = player_slot.get(pid, "")
+		if slot_id == "" or not slots.has(slot_id):
+			continue
+		var slot: Dictionary = slots[slot_id]
+		child.position = slot["position"]
+		child.linear_velocity = Vector3.ZERO
+		child.angular_velocity = Vector3.ZERO
