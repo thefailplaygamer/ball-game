@@ -11,7 +11,7 @@ uniform float grid_x = 6.0;
 uniform float grid_y = 14.0;
 uniform float lit_chance : hint_range(0.0, 1.0) = 0.4;
 uniform float accent_chance : hint_range(0.0, 1.0) = 0.12;
-uniform float window_emission = 2.5;
+uniform float window_emission = 1.7;
 uniform float seed_offset = 0.0;
 
 float hash(vec2 p) {

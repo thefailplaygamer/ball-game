@@ -12,7 +12,7 @@ const PLAYER_SCENE := preload("res://scenes/player.tscn")
 var _player: Node = null
 
 func _ready() -> void:
-	camera.look_at(Vector3(0.0, 1.05, 0.0), Vector3.UP)
+	camera.look_at(Vector3(0.0, 0.95, 0.0), Vector3.UP)
 	_spawn_player()
 
 func set_jersey(jersey_id: int) -> void:

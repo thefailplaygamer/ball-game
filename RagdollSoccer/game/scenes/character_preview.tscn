@@ -45,9 +45,9 @@ mesh = SubResource("CylinderMesh_1")
 surface_material_override/0 = SubResource("Mat_floor")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-position = Vector3(0.85, 1.35, 2.7)
+position = Vector3(0.72, 1.28, 2.35)
 current = true
-fov = 42.0
+fov = 44.0
 
 [node name="PlayerSlot" type="Node3D" parent="."]
 position = Vector3(0, 0.9, 0)

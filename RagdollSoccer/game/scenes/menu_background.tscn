@@ -3,6 +3,8 @@
 [ext_resource type="Texture2D" path="res://assets/textures/grass.jpg" id="2"]
 [ext_resource type="Script" path="res://scripts/orbit_camera.gd" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/city_skyline.tscn" id="6"]
+[ext_resource type="Shader" path="res://shaders/pitch.gdshader" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/stadium.tscn" id="8"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial_1"]
 sky_top_color = Color(0.16, 0.28, 0.58, 1)
@@ -21,27 +23,50 @@ sky_material = SubResource("SkyMaterial_1")
 background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
-ambient_light_energy = 0.85
+ambient_light_energy = 0.9
+tonemap_mode = 3
+tonemap_exposure = 1.05
+tonemap_white = 6.0
 fog_enabled = true
 fog_light_color = Color(0.85, 0.72, 0.65, 1)
 fog_light_energy = 1.0
 fog_sun_scatter = 0.35
-fog_density = 0.01
-fog_sky_affect = 0.25
+fog_density = 0.006
+fog_sky_affect = 0.2
 glow_enabled = true
-glow_intensity = 0.5
-glow_strength = 1.0
-glow_bloom = 0.1
-glow_hdr_threshold = 0.9
+glow_intensity = 0.6
+glow_strength = 1.05
+glow_bloom = 0.12
+glow_hdr_threshold = 0.85
+adjustment_enabled = true
+adjustment_brightness = 1.02
+adjustment_contrast = 1.06
+adjustment_saturation = 1.08
 
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
-size = Vector3(26, 1, 18)
+size = Vector3(32, 1, 20)
 
-[sub_resource type="StandardMaterial3D" id="Mat_grass"]
-albedo_color = Color(0.55, 0.95, 0.45, 1)
-albedo_texture = ExtResource("2")
-uv1_scale = Vector3(13, 9, 1)
-roughness = 0.95
+[sub_resource type="ShaderMaterial" id="Mat_grass"]
+shader = ExtResource("7")
+shader_parameter/grass_tex = ExtResource("2")
+shader_parameter/grass_dark = Color(0.09, 0.27, 0.09, 1)
+shader_parameter/grass_light = Color(0.16, 0.42, 0.14, 1)
+shader_parameter/line_color = Color(0.93, 0.95, 0.93, 1)
+shader_parameter/soil_color = Color(0.16, 0.11, 0.07, 1)
+shader_parameter/goal_line_x = 14.0
+shader_parameter/touch_line_z = 9.3
+shader_parameter/line_half_width = 0.045
+shader_parameter/penalty_depth = 4.4
+shader_parameter/penalty_half_z = 5.55
+shader_parameter/goal_box_depth = 1.47
+shader_parameter/goal_box_half_z = 2.52
+shader_parameter/penalty_spot_x = 11.06
+shader_parameter/circle_radius = 2.44
+shader_parameter/corner_radius = 0.32
+shader_parameter/mow_width = 1.75
+shader_parameter/mow_contrast = 0.16
+shader_parameter/grass_detail = 0.55
+shader_parameter/wear_strength = 0.3
 
 [node name="MenuBackground" type="Node3D"]
 
@@ -61,7 +86,13 @@ surface_material_override/0 = SubResource("Mat_grass")
 
 [node name="CitySkyline" parent="." instance=ExtResource("6")]
 
+[node name="Stadium" parent="." instance=ExtResource("8")]
+
 [node name="OrbitCamera" type="Camera3D" parent="."]
 current = true
-fov = 55.0
+fov = 58.0
 script = ExtResource("4")
+radius = 12.5
+height = 5.0
+angular_speed = 0.05
+look_target = Vector3(0, 2.2, 0)

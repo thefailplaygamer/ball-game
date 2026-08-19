@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode diffuse_lambert, specular_schlick_ggx;
+render_mode cull_disabled, diffuse_lambert, specular_schlick_ggx;
 
 // Trikot-Stoff am Spielermodell: Muster + Farben aus der gemeinsamen
 // Musterbibliothek, dazu feines Webmuster und angedeutete Saum-Naht, damit
@@ -25,6 +25,11 @@ uniform float emission_strength : hint_range(0.0, 4.0) = 1.6;
 // Beine deshalb auf einen schmalen Randstreifen (siehe _apply_body_color).
 uniform vec2 uv_offset = vec2(0.0, 0.0);
 uniform vec2 uv_scale = vec2(1.0, 1.0);
+// Heller/dunkler Stoff fuer dasselbe Muster. Damit setzen sich Hose und
+// Stutzen als eigene Kleidungsstuecke vom Trikot ab, ohne dass das Muster
+// eines Skins dafuer angetastet oder gar ersetzt wird — ein einfarbiger
+// Spieler sah sonst aus wie in einem Ganzkoerperanzug.
+uniform float garment_shade : hint_range(0.4, 1.4) = 1.0;
 
 void fragment() {
 	vec2 puv = uv_offset + UV * uv_scale;
@@ -53,7 +58,7 @@ void fragment() {
 		metal = 0.12;
 	}
 
-	ALBEDO = base;
+	ALBEDO = base * garment_shade;
 	EMISSION = pattern * emit * emission_strength;
 	ROUGHNESS = clamp(rough + weave * 0.15, 0.0, 1.0);
 	METALLIC = metal;

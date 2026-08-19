@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=37 format=3]
 
 [ext_resource type="Script" path="res://scripts/game_manager.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/goal_area.gd" id="2"]
@@ -10,9 +10,10 @@
 [ext_resource type="PackedScene" path="res://scenes/position_select.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/scoreboard.tscn" id="11"]
 [ext_resource type="Shader" path="res://shaders/stadium_goal.gdshader" id="13"]
-[ext_resource type="Texture2D" path="res://assets/textures/fence/goal_net_alpha.png" id="14"]
 [ext_resource type="FontFile" path="res://assets/fonts/BebasNeue-Regular.ttf" id="15"]
 [ext_resource type="PackedScene" path="res://scenes/city_skyline.tscn" id="16"]
+[ext_resource type="Shader" path="res://shaders/pitch.gdshader" id="17"]
+[ext_resource type="PackedScene" path="res://scenes/stadium.tscn" id="18"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_score_chip"]
 bg_color = Color(0.04, 0.05, 0.07, 0.82)
@@ -45,18 +46,26 @@ sky_material = SubResource("SkyMaterial_1")
 background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
-ambient_light_energy = 0.85
+ambient_light_energy = 0.9
+tonemap_mode = 3
+tonemap_exposure = 1.05
+tonemap_white = 6.0
+ssao_enabled = false
 fog_enabled = true
 fog_light_color = Color(0.85, 0.72, 0.65, 1)
 fog_light_energy = 1.0
 fog_sun_scatter = 0.35
-fog_density = 0.01
-fog_sky_affect = 0.25
+fog_density = 0.006
+fog_sky_affect = 0.2
 glow_enabled = true
-glow_intensity = 0.5
-glow_strength = 1.0
-glow_bloom = 0.1
-glow_hdr_threshold = 0.9
+glow_intensity = 0.6
+glow_strength = 1.05
+glow_bloom = 0.12
+glow_hdr_threshold = 0.85
+adjustment_enabled = true
+adjustment_brightness = 1.02
+adjustment_contrast = 1.06
+adjustment_saturation = 1.08
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
 size = Vector3(32, 1, 20)
@@ -64,11 +73,27 @@ size = Vector3(32, 1, 20)
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
 size = Vector3(32, 1, 20)
 
-[sub_resource type="StandardMaterial3D" id="Mat_grass"]
-albedo_color = Color(0.55, 0.95, 0.45, 1)
-albedo_texture = ExtResource("8")
-uv1_scale = Vector3(13, 9, 1)
-roughness = 0.95
+[sub_resource type="ShaderMaterial" id="Mat_grass"]
+shader = ExtResource("17")
+shader_parameter/grass_tex = ExtResource("8")
+shader_parameter/grass_dark = Color(0.09, 0.27, 0.09, 1)
+shader_parameter/grass_light = Color(0.16, 0.42, 0.14, 1)
+shader_parameter/line_color = Color(0.93, 0.95, 0.93, 1)
+shader_parameter/soil_color = Color(0.16, 0.11, 0.07, 1)
+shader_parameter/goal_line_x = 14.0
+shader_parameter/touch_line_z = 9.3
+shader_parameter/line_half_width = 0.045
+shader_parameter/penalty_depth = 4.4
+shader_parameter/penalty_half_z = 5.55
+shader_parameter/goal_box_depth = 1.47
+shader_parameter/goal_box_half_z = 2.52
+shader_parameter/penalty_spot_x = 11.06
+shader_parameter/circle_radius = 2.44
+shader_parameter/corner_radius = 0.32
+shader_parameter/mow_width = 1.75
+shader_parameter/mow_contrast = 0.16
+shader_parameter/grass_detail = 0.55
+shader_parameter/wear_strength = 0.3
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_sidewall"]
 size = Vector3(28, 6.0, 0.3)
@@ -78,10 +103,15 @@ size = Vector3(28, 6.0, 0.3)
 
 [sub_resource type="ShaderMaterial" id="Mat_wall"]
 shader = ExtResource("4")
-shader_parameter/tint = Color(0.8, 0.85, 0.9, 1)
-shader_parameter/base_alpha = 0.4
-shader_parameter/line_alpha = 0.7
-shader_parameter/grid_scale = 6.0
+shader_parameter/tint = Color(0.72, 0.82, 0.85, 1)
+shader_parameter/frame_color = Color(0.42, 0.45, 0.5, 1)
+shader_parameter/base_alpha = 0.1
+shader_parameter/fresnel_alpha = 0.55
+shader_parameter/pane_width = 2.6
+shader_parameter/pane_height = 2.0
+shader_parameter/mullion_width = 0.055
+shader_parameter/dirt_strength = 0.35
+shader_parameter/scratch_strength = 0.3
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_endflank"]
 size = Vector3(0.3, 6.0, 7.5)
@@ -109,27 +139,25 @@ size = Vector3(0.3, 3.0, 4.4)
 
 [sub_resource type="ShaderMaterial" id="Mat_goal_a"]
 shader = ExtResource("13")
-shader_parameter/net_mask = ExtResource("14")
 shader_parameter/team_tint = Color(0.85, 0.2, 0.2, 1)
-shader_parameter/net_rope_color = Color(0.92, 0.93, 0.95, 1)
-shader_parameter/frame_color = Color(0.82, 0.84, 0.88, 1)
-shader_parameter/net_scale = 6.0
-shader_parameter/net_opacity = 0.9
-shader_parameter/base_alpha = 0.6
-shader_parameter/frame_width = 0.07
-shader_parameter/team_tint_strength = 0.45
+shader_parameter/rope_color = Color(0.82, 0.83, 0.85, 1)
+shader_parameter/mesh_size = 0.22
+shader_parameter/rope_width = 0.08
+shader_parameter/sag = 0.35
+shader_parameter/sag_period = 1.4
+shader_parameter/base_alpha = 0.03
+shader_parameter/team_tint_strength = 0.12
 
 [sub_resource type="ShaderMaterial" id="Mat_goal_b"]
 shader = ExtResource("13")
-shader_parameter/net_mask = ExtResource("14")
 shader_parameter/team_tint = Color(0.2, 0.4, 0.9, 1)
-shader_parameter/net_rope_color = Color(0.92, 0.93, 0.95, 1)
-shader_parameter/frame_color = Color(0.82, 0.84, 0.88, 1)
-shader_parameter/net_scale = 6.0
-shader_parameter/net_opacity = 0.9
-shader_parameter/base_alpha = 0.6
-shader_parameter/frame_width = 0.07
-shader_parameter/team_tint_strength = 0.45
+shader_parameter/rope_color = Color(0.82, 0.83, 0.85, 1)
+shader_parameter/mesh_size = 0.22
+shader_parameter/rope_width = 0.08
+shader_parameter/sag = 0.35
+shader_parameter/sag_period = 1.4
+shader_parameter/base_alpha = 0.03
+shader_parameter/team_tint_strength = 0.12
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_goalsensor"]
 size = Vector3(2.5, 3.0, 4)
@@ -158,6 +186,8 @@ current = true
 fov = 60.0
 
 [node name="CitySkyline" parent="." instance=ExtResource("16")]
+
+[node name="Stadium" parent="." instance=ExtResource("18")]
 
 [node name="Floor" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)

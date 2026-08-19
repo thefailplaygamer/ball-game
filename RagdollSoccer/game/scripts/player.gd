@@ -49,8 +49,28 @@ const HISTORY_SECONDS := 6.0
 const MAX_RAGDOLL_DURATION := 1.0
 const PENALTY_BOX_POSITION := Vector3(0.0, 1.2, 14.0)
 const JerseyData := preload("res://scripts/jersey_data.gd")
+const BodyMesh := preload("res://scripts/body_mesh.gd")
 const JERSEY_SHADER := preload("res://shaders/player_jersey.gdshader")
 const SKIN_SHADER := preload("res://shaders/player_skin.gdshader")
+
+## Der Fuß hängt im Szenenbaum um -90° gekippt am Schienbein (die Schuhlänge
+## liegt im Mesh auf der Y-Achse). Die Animation rechnet immer auf diesen
+## Grundwinkel drauf.
+const FOOT_BASE_PITCH := -PI * 0.5
+const KICK_ANIM_DURATION := 0.45
+const TACKLE_ANIM_DURATION := 0.5
+
+## Hautton und Haarfarbe werden aus der Peer-ID abgeleitet: so sieht jeder
+## Spieler anders aus, aber auf JEDEM Client identisch — ohne dass dafür etwas
+## zusätzlich übers Netz repliziert werden müsste.
+const SKIN_TONES := [
+	Color(0.94, 0.78, 0.66), Color(0.87, 0.68, 0.54), Color(0.78, 0.58, 0.44),
+	Color(0.62, 0.44, 0.32), Color(0.45, 0.31, 0.22), Color(0.33, 0.22, 0.16),
+]
+const HAIR_COLORS := [
+	Color(0.06, 0.05, 0.05), Color(0.16, 0.1, 0.07), Color(0.28, 0.17, 0.09),
+	Color(0.45, 0.32, 0.16), Color(0.68, 0.56, 0.32), Color(0.35, 0.35, 0.37),
+]
 
 var owner_peer_id: int = 1
 
@@ -85,19 +105,37 @@ var penalty_timer: float = 0.0:
 var _history: Array = [] # Array of {t: float, pos: Vector3, quat: Quaternion}
 var _last_position: Vector3 = Vector3.ZERO
 var _walk_phase: float = 0.0
+var _anim_speed: float = 0.0
+var _anim_seed: float = 0.0
+var _kick_anim: float = 0.0
+var _tackle_anim: float = 0.0
 
 @onready var spring_arm: SpringArm3D = $SpringArm3D
 @onready var camera: Camera3D = $SpringArm3D/Camera3D
-@onready var head: MeshInstance3D = $Head
-@onready var torso: MeshInstance3D = $Torso
-@onready var arm_l: MeshInstance3D = $ArmL
-@onready var arm_r: MeshInstance3D = $ArmR
-@onready var leg_l: MeshInstance3D = $LegL
-@onready var leg_r: MeshInstance3D = $LegR
-@onready var body_parts: Array[MeshInstance3D] = [head, torso, arm_l, arm_r, leg_l, leg_r]
-@onready var jersey_name: Label3D = $JerseyName
-@onready var jersey_number: Label3D = $JerseyNumber
-@onready var name_tag: Label3D = $NameTag
+@onready var model: Node3D = $Model
+@onready var hips: Node3D = $Model/Hips
+@onready var chest: Node3D = $Model/Chest
+@onready var torso: MeshInstance3D = $Model/Chest/Torso
+@onready var neck: MeshInstance3D = $Model/Chest/Neck
+@onready var head: MeshInstance3D = $Model/Chest/Neck/Head
+@onready var hair: MeshInstance3D = $Model/Chest/Neck/Head/Hair
+@onready var headband: MeshInstance3D = $Model/Chest/Neck/Head/Headband
+@onready var arm_l: MeshInstance3D = $Model/Chest/ArmL
+@onready var arm_r: MeshInstance3D = $Model/Chest/ArmR
+@onready var forearm_l: MeshInstance3D = $Model/Chest/ArmL/ForearmL
+@onready var forearm_r: MeshInstance3D = $Model/Chest/ArmR/ForearmR
+@onready var hand_l: MeshInstance3D = $Model/Chest/ArmL/ForearmL/HandL
+@onready var hand_r: MeshInstance3D = $Model/Chest/ArmR/ForearmR/HandR
+@onready var armband_r: MeshInstance3D = $Model/Chest/ArmR/ArmbandR
+@onready var leg_l: MeshInstance3D = $Model/Hips/LegL
+@onready var leg_r: MeshInstance3D = $Model/Hips/LegR
+@onready var shin_l: MeshInstance3D = $Model/Hips/LegL/ShinL
+@onready var shin_r: MeshInstance3D = $Model/Hips/LegR/ShinR
+@onready var foot_l: MeshInstance3D = $Model/Hips/LegL/ShinL/FootL
+@onready var foot_r: MeshInstance3D = $Model/Hips/LegR/ShinR/FootR
+@onready var jersey_name: Label3D = $Model/Chest/JerseyName
+@onready var jersey_number: Label3D = $Model/Chest/JerseyNumber
+@onready var name_tag: Label3D = $Model/NameTag
 
 var _active_ghost: Node3D = null
 
@@ -106,6 +144,8 @@ func _ready() -> void:
 	# und replizieren sich NICHT automatisch zu den Clients. Der Node-Name dagegen
 	# wird vom MultiplayerSpawner zuverlässig mitübertragen, also aus ihm ableiten.
 	owner_peer_id = int(str(name))
+	_anim_seed = float(abs(owner_peer_id) % 97) * 0.31
+	_build_body()
 	_apply_body_color()
 	_update_jersey_text()
 	Network.players_changed.connect(_update_jersey_text)
@@ -166,9 +206,36 @@ func _physics_process(delta: float) -> void:
 		_start_tackle()
 		tackle_requested = false
 
+## Setzt die prozedural erzeugten Körper-Meshes ein. Die Meshes selbst liegen
+## in einem gemeinsamen Cache (siehe body_mesh.gd), pro Spieler entsteht also
+## kein zusätzlicher Speicher.
+func _build_body() -> void:
+	torso.mesh = BodyMesh.get_part("torso")
+	neck.mesh = BodyMesh.get_part("neck")
+	head.mesh = BodyMesh.get_part("head")
+	hair.mesh = BodyMesh.get_part("hair")
+	headband.mesh = BodyMesh.get_part("headband")
+	armband_r.mesh = BodyMesh.get_part("armband")
+	for part in [arm_l, arm_r]:
+		part.mesh = BodyMesh.get_part("upper_arm")
+	for part in [forearm_l, forearm_r]:
+		part.mesh = BodyMesh.get_part("forearm")
+	for part in [hand_l, hand_r]:
+		part.mesh = BodyMesh.get_part("hand")
+	for part in [leg_l, leg_r]:
+		part.mesh = BodyMesh.get_part("thigh")
+	for part in [shin_l, shin_r]:
+		part.mesh = BodyMesh.get_part("shin")
+	for part in [foot_l, foot_r]:
+		part.mesh = BodyMesh.get_part("foot")
+
+## Alle Teile, die der Trikot-Shader einfärbt.
+func _jersey_parts() -> Array:
+	return [torso, arm_l, arm_r, forearm_l, forearm_r, leg_l, leg_r, shin_l, shin_r]
+
 func _apply_body_color() -> void:
-	if body_parts.is_empty():
-		return # onready-Array noch nicht befüllt, _ready() ruft das gleich selbst noch mal auf
+	if torso == null:
+		return # onready-Referenzen noch nicht befüllt, _ready() ruft das gleich selbst noch mal auf
 	var def: Dictionary = JerseyData.get_by_id(equipped_jersey_id)
 	var mode: int = JerseyData.Pattern.SOLID if def["id"] == 0 else int(def["pattern"])
 	var col_a: Color = body_color if def["id"] == 0 else def.get("color_a", body_color)
@@ -180,13 +247,27 @@ func _apply_body_color() -> void:
 	# sonst säße das Motiv fünfmal am Körper. Alle anderen Muster kacheln
 	# ohnehin und laufen unverändert über alle Teile.
 	var focal: bool = mode in JerseyData.FOCAL_PATTERNS
+	var full := [Vector2.ZERO, Vector2.ONE]
+	var strip_l := [Vector2(0.02, 0.0), Vector2(0.2, 1.0)]
+	var strip_r := [Vector2(0.78, 0.0), Vector2(0.2, 1.0)]
+	var strip_leg_l := [Vector2(0.09, 0.0), Vector2(0.18, 1.0)]
+	var strip_leg_r := [Vector2(0.73, 0.0), Vector2(0.18, 1.0)]
 	var regions := {
-		torso: [Vector2.ZERO, Vector2.ONE],
-		arm_l: [Vector2(0.02, 0.0), Vector2(0.2, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
-		arm_r: [Vector2(0.78, 0.0), Vector2(0.2, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
-		leg_l: [Vector2(0.09, 0.0), Vector2(0.18, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
-		leg_r: [Vector2(0.73, 0.0), Vector2(0.18, 1.0)] if focal else [Vector2.ZERO, Vector2.ONE],
+		torso: full,
+		arm_l: strip_l if focal else full,
+		forearm_l: strip_l if focal else full,
+		arm_r: strip_r if focal else full,
+		forearm_r: strip_r if focal else full,
+		leg_l: strip_leg_l if focal else full,
+		shin_l: strip_leg_l if focal else full,
+		leg_r: strip_leg_r if focal else full,
+		shin_r: strip_leg_r if focal else full,
 	}
+	# Hose und Stutzen bekommen dasselbe Muster in einer anderen Stoffhelligkeit,
+	# damit der Spieler ein erkennbares Trikot-Hose-Stutzen-Set trägt statt eines
+	# einfarbigen Ganzkörperanzugs. Das Muster selbst bleibt unangetastet.
+	var shades := {torso: 1.0, arm_l: 1.0, arm_r: 1.0, forearm_l: 1.0, forearm_r: 1.0,
+		leg_l: 0.68, leg_r: 0.68, shin_l: 0.86, shin_r: 0.86}
 	for part in regions:
 		var jersey_mat := ShaderMaterial.new()
 		jersey_mat.shader = JERSEY_SHADER
@@ -196,14 +277,40 @@ func _apply_body_color() -> void:
 		jersey_mat.set_shader_parameter("color_c", col_c)
 		jersey_mat.set_shader_parameter("uv_offset", regions[part][0])
 		jersey_mat.set_shader_parameter("uv_scale", regions[part][1])
+		jersey_mat.set_shader_parameter("garment_shade", shades[part])
 		part.material_override = jersey_mat
-	# Kopf behält die Team-Farbe (wichtig für spätere Trikot-Skins, sonst
-	# erkennt man das Team nicht mehr am Kopf) - bekommt aber trotzdem eine
-	# feine Textur statt einer komplett flachen Fläche.
+
+	# Kopf, Hals und Hände bekommen einen echten Hautton statt der Team-Farbe.
+	# Damit man das Team trotzdem auf einen Blick erkennt — auch wenn ein
+	# Trikot-Skin den ganzen Körper umfärbt — wandert die Team-Farbe auf
+	# Stirnband, Kapitänsbinde und Schuhe.
 	var skin_mat := ShaderMaterial.new()
 	skin_mat.shader = SKIN_SHADER
-	skin_mat.set_shader_parameter("skin_tone", body_color)
-	head.material_override = skin_mat
+	skin_mat.set_shader_parameter("skin_tone", _skin_tone())
+	for part in [head, neck, hand_l, hand_r,
+			head.get_node("Nose"), head.get_node("EarL"), head.get_node("EarR")]:
+		part.material_override = skin_mat
+
+	var hair_mat := StandardMaterial3D.new()
+	hair_mat.albedo_color = HAIR_COLORS[abs(owner_peer_id * 7 + 3) % HAIR_COLORS.size()]
+	hair_mat.roughness = 0.85
+	hair.material_override = hair_mat
+
+	var team_mat := StandardMaterial3D.new()
+	team_mat.albedo_color = body_color
+	team_mat.roughness = 0.5
+	headband.material_override = team_mat
+	armband_r.material_override = team_mat
+
+	var boot_mat := StandardMaterial3D.new()
+	boot_mat.albedo_color = body_color.darkened(0.35)
+	boot_mat.roughness = 0.3
+	boot_mat.metallic = 0.15
+	foot_l.material_override = boot_mat
+	foot_r.material_override = boot_mat
+
+func _skin_tone() -> Color:
+	return SKIN_TONES[abs(owner_peer_id * 13 + 5) % SKIN_TONES.size()]
 
 ## Trikotname (Rücken) kommt aus der Netzwerk-Spielerliste, Nummer aus der
 ## synchronisierten player_number-Eigenschaft.
@@ -385,6 +492,7 @@ func _start_tackle() -> void:
 	tackling = true
 	tackle_timer = tackle_duration
 	apply_central_impulse(facing_dir * tackle_impulse)
+	play_tackle_anim.rpc()
 
 ## Wird nach `tackles_for_penalty` erfolgreichen Grätschen ausgelöst: Spieler
 ## wird eingefroren, aus dem Spielfeld teleportiert und nach `penalty_duration`
@@ -461,6 +569,7 @@ func _try_kick() -> void:
 	if ball.has_method("set_last_toucher"):
 		ball.set_last_toucher(owner_peer_id)
 	ball.play_kick_sfx.rpc()
+	play_kick_anim.rpc()
 
 ## Dreht die Kamera bei gehaltener linker Maustaste sanft Richtung Ball, damit
 ## man ihn nach einem Dreher/Sturz wiederfindet.
@@ -537,7 +646,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_record_history()
-	_animate_walk_cycle(delta)
+	_animate(delta)
 
 	if owner_peer_id != Network.get_my_id():
 		return
@@ -586,24 +695,172 @@ func _record_history() -> void:
 	while _history.size() > 1 and now - _history[0]["t"] > HISTORY_SECONDS:
 		_history.pop_front()
 
-## Läuft auf JEDEM Peer aus der replizierten Position, damit auch fremde Spieler
-## eine Lauf-Animation zeigen, obwohl ihre Geschwindigkeit nicht extra synchronisiert wird.
-func _animate_walk_cycle(delta: float) -> void:
+## Komplette Körperanimation. Läuft auf JEDEM Peer und speist sich nur aus
+## Werten, die überall gleich sind — der replizierten Position (daraus das
+## Tempo), der replizierten Rotation (daraus "liegt am Boden") und den beiden
+## Animations-RPCs für Schuss und Grätsche. Deshalb sehen alle Clients dieselbe
+## Bewegung, ohne dass dafür ein einziges zusätzliches Byte übertragen wird.
+func _animate(delta: float) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
 	var moved := global_position - _last_position
 	_last_position = global_position
-	var speed: float = Vector2(moved.x, moved.z).length() / max(delta, 0.0001)
-	if speed > 0.3 and state == State.STANDING:
-		_walk_phase += speed * delta * 4.0
-		var swing: float = sin(_walk_phase) * clamp(speed / sprint_speed, 0.0, 1.0) * 0.35
-		leg_l.rotation.x = swing
-		leg_r.rotation.x = -swing
-		arm_l.rotation.x = -swing
-		arm_r.rotation.x = swing
+	var raw_speed: float = Vector2(moved.x, moved.z).length() / max(delta, 0.0001)
+	# Die replizierte Position kommt in Sprüngen an — ohne Glättung würde die
+	# Schrittfrequenz bei fremden Spielern zappeln.
+	_anim_speed = lerp(_anim_speed, min(raw_speed, sprint_speed * 1.3), clamp(delta * 9.0, 0.0, 1.0))
+
+	_kick_anim = max(_kick_anim - delta, 0.0)
+	_tackle_anim = max(_tackle_anim - delta, 0.0)
+
+	var tilt: float = rad_to_deg(global_transform.basis.y.angle_to(Vector3.UP))
+	var fallen: bool = tilt > 45.0
+
+	var pose := {}
+	if fallen:
+		pose = _pose_fallen(now)
+	elif _tackle_anim > 0.0:
+		pose = _pose_tackle()
 	else:
-		leg_l.rotation.x = lerp(leg_l.rotation.x, 0.0, delta * 5.0)
-		leg_r.rotation.x = lerp(leg_r.rotation.x, 0.0, delta * 5.0)
-		arm_l.rotation.x = lerp(arm_l.rotation.x, 0.0, delta * 5.0)
-		arm_r.rotation.x = lerp(arm_r.rotation.x, 0.0, delta * 5.0)
+		pose = _pose_locomotion(delta, now)
+		if _kick_anim > 0.0:
+			_blend_kick(pose)
+
+	_apply_pose(pose, delta, 18.0 if (_kick_anim > 0.0 or _tackle_anim > 0.0) else 11.0)
+
+## Normales Stehen und Laufen.
+func _pose_locomotion(delta: float, now: float) -> Dictionary:
+	var amp: float = clamp(_anim_speed / sprint_speed, 0.0, 1.0)
+	var running: bool = _anim_speed > 0.35
+	if running:
+		# Schrittfrequenz wächst mit dem Tempo, aber nicht linear — sonst
+		# trippelt der Spieler beim Sprint.
+		_walk_phase += (2.6 + _anim_speed * 0.85) * delta
+
+	var swing: float = sin(_walk_phase)
+	var swing_off: float = sin(_walk_phase + PI)
+	var leg_amp: float = 0.16 + amp * 0.52
+	var arm_amp: float = 0.12 + amp * 0.42
+	# Beim Laufen beugt sich das Knie in der Schwungphase stark, im Standbein
+	# bleibt es fast gestreckt.
+	var flex_l: float = 0.1 + 0.95 * maxf(-sin(_walk_phase - 0.5), 0.0)
+	var flex_r: float = 0.1 + 0.95 * maxf(-sin(_walk_phase + PI - 0.5), 0.0)
+
+	# Ruheatmung und leichtes Gewichtsverlagern, damit ein stehender Spieler
+	# nicht wie eine Schaufensterpuppe wirkt.
+	var idle: float = 1.0 - amp
+	var breath: float = sin(now * 1.5 + _anim_seed) * 0.02 * idle
+	var sway: float = sin(now * 0.7 + _anim_seed) * 0.035 * idle
+
+	var lean: float = amp * 0.2
+
+	return {
+		"bob": sin(_walk_phase * 2.0) * 0.022 * amp + breath * 0.4,
+		"chest": Vector3(-lean, swing * 0.1 * amp, sway * 0.4),
+		"hips": Vector3(0.0, -swing * 0.08 * amp, sway),
+		"neck": Vector3(lean * 0.7 + breath, -swing * 0.06 * amp, 0.0),
+		"hip_l": swing * leg_amp,
+		"hip_r": swing_off * leg_amp,
+		"knee_l": -flex_l * amp,
+		"knee_r": -flex_r * amp,
+		"ankle_l": -(swing * leg_amp - flex_l * amp) * 0.4,
+		"ankle_r": -(swing_off * leg_amp - flex_r * amp) * 0.4,
+		"shoulder_l": Vector3(-swing * arm_amp, 0.0, -0.2 - idle * 0.04),
+		"shoulder_r": Vector3(-swing_off * arm_amp, 0.0, 0.2 + idle * 0.04),
+		"elbow_l": 0.35 + amp * 0.45 + maxf(-swing, 0.0) * amp * 0.5,
+		"elbow_r": 0.35 + amp * 0.45 + maxf(-swing_off, 0.0) * amp * 0.5,
+	}
+
+## Am Boden liegend: unkontrolliertes Rudern mit Armen und Beinen.
+func _pose_fallen(now: float) -> Dictionary:
+	var t: float = now * 1.0 + _anim_seed * 7.0
+	return {
+		"bob": 0.0,
+		"chest": Vector3(sin(t * 6.0) * 0.2, sin(t * 4.3) * 0.25, cos(t * 5.1) * 0.2),
+		"hips": Vector3(0.0, cos(t * 3.7) * 0.2, sin(t * 4.9) * 0.15),
+		"neck": Vector3(sin(t * 7.3) * 0.3, cos(t * 6.1) * 0.35, 0.0),
+		"hip_l": sin(t * 9.0) * 0.85 + 0.2,
+		"hip_r": sin(t * 9.0 + 2.1) * 0.85 + 0.2,
+		"knee_l": -0.5 - maxf(sin(t * 11.0), 0.0) * 0.8,
+		"knee_r": -0.5 - maxf(sin(t * 11.0 + 1.4), 0.0) * 0.8,
+		"ankle_l": sin(t * 8.0) * 0.3,
+		"ankle_r": sin(t * 8.0 + 1.7) * 0.3,
+		"shoulder_l": Vector3(sin(t * 8.5) * 1.2, 0.0, -0.5 - absf(sin(t * 6.0)) * 0.5),
+		"shoulder_r": Vector3(sin(t * 8.5 + 2.6) * 1.2, 0.0, 0.5 + absf(sin(t * 6.4)) * 0.5),
+		"elbow_l": 0.5 + absf(sin(t * 10.0)) * 0.9,
+		"elbow_r": 0.5 + absf(sin(t * 10.0 + 1.1)) * 0.9,
+	}
+
+## Grätsche: Ausfallschritt mit vorgestrecktem Bein und tiefem Schwerpunkt.
+func _pose_tackle() -> Dictionary:
+	var phase: float = 1.0 - _tackle_anim / TACKLE_ANIM_DURATION
+	var punch: float = sin(clamp(phase, 0.0, 1.0) * PI)
+	return {
+		"bob": -0.14 * punch,
+		"chest": Vector3(0.35 * punch, 0.0, 0.0),
+		"hips": Vector3(0.0, 0.0, 0.0),
+		"neck": Vector3(-0.3 * punch, 0.0, 0.0),
+		"hip_l": 1.25 * punch,
+		"hip_r": -0.55 * punch,
+		"knee_l": -0.1 * punch,
+		"knee_r": -1.1 * punch,
+		"ankle_l": -0.3 * punch,
+		"ankle_r": 0.2 * punch,
+		"shoulder_l": Vector3(-1.1 * punch, 0.0, -0.45),
+		"shoulder_r": Vector3(-0.9 * punch, 0.0, 0.45),
+		"elbow_l": 0.4,
+		"elbow_r": 0.4,
+	}
+
+## Schuss: Ausholen, Durchziehen, Nachschwingen — wird über die Laufanimation
+## gelegt, damit der Oberkörper weiter mitläuft.
+func _blend_kick(pose: Dictionary) -> void:
+	var phase: float = 1.0 - _kick_anim / KICK_ANIM_DURATION
+	var swing_angle: float
+	if phase < 0.3:
+		# Ausholen nach hinten.
+		swing_angle = lerp(0.0, -0.85, phase / 0.3)
+	elif phase < 0.55:
+		# Durchziehen nach vorne.
+		swing_angle = lerp(-0.85, 1.15, (phase - 0.3) / 0.25)
+	else:
+		swing_angle = lerp(1.15, 0.0, (phase - 0.55) / 0.45)
+	var weight: float = sin(clamp(phase, 0.0, 1.0) * PI)
+
+	pose["hip_r"] = swing_angle
+	pose["knee_r"] = -maxf(-swing_angle, 0.0) * 1.1 - 0.1
+	pose["ankle_r"] = -0.25 * weight
+	# Standbein leicht gebeugt, Oberkörper lehnt zurück, Arme balancieren aus.
+	pose["hip_l"] = lerp(float(pose["hip_l"]), -0.15, weight)
+	pose["knee_l"] = lerp(float(pose["knee_l"]), -0.3, weight)
+	pose["chest"] = Vector3(0.22 * weight, -0.18 * weight, 0.0)
+	pose["shoulder_l"] = Vector3(-0.9 * weight, 0.0, -0.35 - 0.2 * weight)
+	pose["shoulder_r"] = Vector3(0.5 * weight, 0.0, 0.3 + 0.25 * weight)
+
+func _apply_pose(pose: Dictionary, delta: float, rate: float) -> void:
+	var f: float = clamp(delta * rate, 0.0, 1.0)
+	model.position.y = lerp(model.position.y, float(pose["bob"]), f)
+	chest.rotation = chest.rotation.lerp(pose["chest"], f)
+	hips.rotation = hips.rotation.lerp(pose["hips"], f)
+	neck.rotation = neck.rotation.lerp(pose["neck"], f)
+	leg_l.rotation.x = lerp(leg_l.rotation.x, float(pose["hip_l"]), f)
+	leg_r.rotation.x = lerp(leg_r.rotation.x, float(pose["hip_r"]), f)
+	shin_l.rotation.x = lerp(shin_l.rotation.x, float(pose["knee_l"]), f)
+	shin_r.rotation.x = lerp(shin_r.rotation.x, float(pose["knee_r"]), f)
+	foot_l.rotation.x = lerp(foot_l.rotation.x, FOOT_BASE_PITCH + float(pose["ankle_l"]), f)
+	foot_r.rotation.x = lerp(foot_r.rotation.x, FOOT_BASE_PITCH + float(pose["ankle_r"]), f)
+	arm_l.rotation = arm_l.rotation.lerp(pose["shoulder_l"], f)
+	arm_r.rotation = arm_r.rotation.lerp(pose["shoulder_r"], f)
+	forearm_l.rotation.x = lerp(forearm_l.rotation.x, float(pose["elbow_l"]), f)
+	forearm_r.rotation.x = lerp(forearm_r.rotation.x, float(pose["elbow_r"]), f)
+
+## Vom Host ausgelöst, damit Schuss und Grätsche auf allen Clients zu sehen sind.
+@rpc("call_local", "reliable")
+func play_kick_anim() -> void:
+	_kick_anim = KICK_ANIM_DURATION
+
+@rpc("call_local", "reliable")
+func play_tackle_anim() -> void:
+	_tackle_anim = TACKLE_ANIM_DURATION
 
 func _update_stamina_bar() -> void:
 	if owner_peer_id != Network.get_my_id():
@@ -627,27 +884,19 @@ func play_goal_replay(duration: float) -> void:
 	if clip.size() < 2:
 		return
 
-	var was_head_hidden := not head.visible
-	var was_tag_hidden := not name_tag.visible
-	for part in body_parts:
-		part.visible = false
-	jersey_name.visible = false
-	jersey_number.visible = false
-	name_tag.visible = false
-	var ghost := Node3D.new()
+	# Der Geist ist eine Kopie des kompletten Modell-Astes: Rig, Trikot-Material,
+	# Name und Nummer kommen dadurch automatisch mit, und die Gliedmaßen behalten
+	# ihre Pose. (Früher wurden die Körperteile einzeln dupliziert — das ginge
+	# mit dem neuen, verschachtelten Skelett nicht mehr, weil die Teile ihre
+	# Position erst über die Elternknochen bekommen.)
+	var ghost: Node3D = model.duplicate()
 	get_parent().add_child(ghost)
 	_active_ghost = ghost
-	for part in body_parts:
-		var dup: MeshInstance3D = part.duplicate()
-		dup.visible = true
-		ghost.add_child(dup)
-	# Trikot-Name/-Nummer und der schwebende Namens-Tag müssen mit ins Replay,
-	# sonst bleiben sie an der letzten echten Position stehen statt dem
-	# Geist-Körper zu folgen.
-	for label in [jersey_name, jersey_number, name_tag]:
-		var label_dup: Label3D = label.duplicate()
-		label_dup.visible = true
-		ghost.add_child(label_dup)
+	# Beim eigenen Spieler ist der Kopf ausgeblendet (Ego-Kamera) — im Replay
+	# sieht man sich aber von außen, also gehört er dort wieder dazu.
+	ghost.get_node("Chest/Neck/Head").visible = true
+	ghost.get_node("NameTag").visible = true
+	model.visible = false
 
 	var clip_t0: float = clip[0]["t"]
 	var clip_t1: float = clip[clip.size() - 1]["t"]
@@ -667,14 +916,7 @@ func play_goal_replay(duration: float) -> void:
 
 	ghost.queue_free()
 	_active_ghost = null
-	for part in body_parts:
-		part.visible = true
-	jersey_name.visible = true
-	jersey_number.visible = true
-	if was_head_hidden:
-		head.visible = false
-	if not was_tag_hidden:
-		name_tag.visible = true
+	model.visible = true
 
 func _sample_history(clip: Array, t: float) -> Dictionary:
 	for i in range(clip.size() - 1):

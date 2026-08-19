@@ -1,8 +1,2 @@
 grass.jpg
   Quelle unbekannt (bereits im Projekt vorhanden, vor diesem Credits-File hinzugefügt)
-
-fence/goal_net_alpha.png
-  ambientCG - "Fence001" (1K-PNG, nur die Opacity-Map verwendet, als Netz-Alphamaske
-  für die Tornetz-Shader res://shaders/stadium_goal.gdshader)
-  https://ambientcg.com/view?id=Fence001
-  Lizenz: CC0 (gemeinfrei), keine Namensnennung nötig
